@@ -7,9 +7,24 @@ phases:
   pre_build:
     commands:
       - chmod +x mvnw
+      - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+      - REPOSITORY_URI=628712753927.dkr.ecr.us-east-1.amazonaws.com/echo-service
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
   build:
     commands:
+      - echo Build started on `date`
+      - echo Building application...
       # MAVEN_CONFIG is set to /root/.m2 is CodeBuild Dockerfile which breaks the mvn usage
       # see: https://github.com/aws/aws-codebuild-docker-images/issues/237
       - export MAVEN_CONFIG=''
       - ./mvnw -B package
+      - echo Building Docker image...
+      - docker build -t $REPOSITORY_URI:latest .
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - printf '[{"name":"echo-service","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
