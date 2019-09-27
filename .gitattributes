@@ -1,0 +1,9 @@
+# auto mode as default, in case core.autocrlf is not set.
+* text=auto
+
+# Unix line ending for all shell scripts
+*.sh      eol=lf
+
+# Unix line endings for Maven wrapper script
+mvnw text eol=lf
+mvnw.cmd text eol=crlf
